@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Screen, SegmentedControl, Toggle, euro } from '@/components/ui'
 import { CoinIcon, PlusIcon } from '@/components/icons'
 import { useStore } from '@/store/useStore'
-import { courseLabel, defaultValueByPar, distinctPars, uid, validateCourse } from '@/domain/course'
+import { courseLabel, defaultValueByPar, skinPars, uid, validateCourse } from '@/domain/course'
 import { playingHandicap, totalPar } from '@/domain/handicap'
 import { FORMAT_LABELS, type Format, type Participant, type SkinsTieRule } from '@/domain/types'
 
@@ -35,7 +35,8 @@ export default function NewRound() {
   const course = courses.find((c) => c.id === courseId)
   const tee = course?.tees.find((t) => t.id === teeId) ?? course?.tees[0]
   const holes = tee?.holes ?? []
-  const pars = useMemo(() => distinctPars(holes), [holes])
+  const pars = useMemo(() => skinPars(holes), [holes])
+  const missingPars = [3, 4, 5].filter((par) => holes.length > 0 && !holes.some((h) => h.par === par))
 
   // Série de départ et mises par défaut suivent le parcours sélectionné.
   useEffect(() => {
@@ -333,6 +334,16 @@ export default function NewRound() {
                   </div>
                 ))}
               </div>
+              {course && missingPars.length > 0 && (
+                <p className="mt-2 rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn-ink">
+                  Cette carte n'a aucun trou de par {missingPars.join(' ni ')}. Si c'est faux
+                  (pars manquants à l'import), corrige-la dans{' '}
+                  <Link to={`/courses/${course.id}`} className="underline">
+                    l'éditeur du parcours
+                  </Link>
+                  .
+                </p>
+              )}
               <p className="text-xs text-veil/40 mt-2 flex items-start gap-1.5">
                 <CoinIcon className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>

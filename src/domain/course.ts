@@ -85,10 +85,18 @@ export function distinctPars(holes: Hole[]): number[] {
   return [...new Set(holes.map((h) => h.par))].sort((a, b) => a - b)
 }
 
+/** Les pars pour lesquels on propose une valeur de skins : toujours 3, 4 et 5,
+ *  plus tout autre par présent. Les dériver des seuls trous de la carte masquait
+ *  le champ du par 3 dès qu'une carte importée n'en contenait aucun, alors que
+ *  c'est la carte qui est alors à corriger, pas le réglage qui est à cacher. */
+export function skinPars(holes: Hole[]): number[] {
+  return [...new Set([3, 4, 5, ...distinctPars(holes)])].sort((a, b) => a - b)
+}
+
 /** Valeurs par défaut : 1 € sur un par 3, 2 € sur un par 4, 3 € sur un par 5. */
 export function defaultValueByPar(holes: Hole[]): Record<number, number> {
   const out: Record<number, number> = {}
-  for (const par of distinctPars(holes)) out[par] = par - 2
+  for (const par of skinPars(holes)) out[par] = par - 2
   return out
 }
 

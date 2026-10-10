@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Screen, SegmentedControl } from '@/components/ui'
 import { PlusIcon, TrashIcon } from '@/components/icons'
@@ -35,9 +35,16 @@ function Editor({ initial }: { initial: Course }) {
   // l'appareil au fil de la saisie, sans attendre un clic. Une carte incomplète
   // est donc conservée telle quelle et reprise plus tard ; c'est le lancement
   // d'une partie qui exige une carte valide, pas son enregistrement.
+  //
+  // On compare au dernier brouillon écrit (et non à la fiche du store) : le store
+  // restampe la fiche à chaque écriture, ce qui la rendait « différente » du
+  // brouillon et relançait l'enregistrement sans fin (écran blanc).
+  const lastSaved = useRef<Course>(initial)
   useEffect(() => {
-    if (draft !== initial) upsertCourse(draft)
-  }, [draft, initial, upsertCourse])
+    if (draft === lastSaved.current) return
+    lastSaved.current = draft
+    upsertCourse(draft)
+  }, [draft, upsertCourse])
 
   const tee = draft.tees[Math.min(teeIndex, draft.tees.length - 1)]
   const errors = validateCourse(draft)
