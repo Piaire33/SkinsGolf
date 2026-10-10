@@ -111,6 +111,7 @@ export function computeSkins(round: Round): SkinsResult {
 
   const results: SkinsHoleResult[] = []
   let carry = 0
+  let lastHoleWinners: string[] = []
 
   for (let i = 0; i < holeCount; i++) {
     const hole = holes[i]
@@ -164,6 +165,7 @@ export function computeSkins(round: Round): SkinsResult {
     }
 
     carry = carriedOut
+    if (i === holeCount - 1) lastHoleWinners = winners
     results.push({
       hole: hole.number,
       par: hole.par,
@@ -176,6 +178,15 @@ export function computeSkins(round: Round): SkinsResult {
       effectiveScores,
       status,
     })
+  }
+
+  // Dernier trou égalisé : ce qui reste en jeu est perdu, ou partagé entre les
+  // joueurs à égalité sur ce trou, selon la règle choisie avant le départ.
+  const last = results[results.length - 1]
+  if (round.skins.endRule === 'split' && last?.status === 'carried' && pay(lastHoleWinners, last.carriedOut)) {
+    last.status = 'split'
+    last.winnerIds = lastHoleWinners
+    last.carriedOut = 0
   }
 
   // Le report que personne n'a remporté : les égalités qui suivent le dernier

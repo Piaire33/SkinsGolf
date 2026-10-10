@@ -5,7 +5,7 @@ import { CoinIcon, PlusIcon } from '@/components/icons'
 import { useStore } from '@/store/useStore'
 import { courseLabel, defaultValueByPar, skinPars, uid, validateCourse } from '@/domain/course'
 import { playingHandicap, totalPar } from '@/domain/handicap'
-import { FORMAT_LABELS, type Format, type Participant, type SkinsTieRule } from '@/domain/types'
+import { FORMAT_LABELS, type Format, type Participant, type SkinsEndRule, type SkinsTieRule } from '@/domain/types'
 
 const MAX_PLAYERS = 4
 const TEAMS = ['A', 'B'] as const
@@ -28,6 +28,7 @@ export default function NewRound() {
   const [skinsOn, setSkinsOn] = useState(true)
   const [skinsNet, setSkinsNet] = useState(false)
   const [tieRule, setTieRule] = useState<SkinsTieRule>('carryOver')
+  const [endRule, setEndRule] = useState<SkinsEndRule>('lost')
   const [stakes, setStakes] = useState<Record<number, number>>({})
 
   const [quickName, setQuickName] = useState('')
@@ -56,9 +57,8 @@ export default function NewRound() {
     })
   }, [holes])
 
-  // Le skins se joue en duel : avec deux joueurs, le perdant d'un trou paie le
-  // gagnant sans ambiguïté sur qui doit quoi. Au-delà, l'option est désactivée.
-  const skinsAvailable = selected.length === 2
+  // Le skins oppose au moins deux joueurs : seul, personne ne peut payer.
+  const skinsAvailable = selected.length >= 2
   const skinsActive = skinsOn && skinsAvailable
 
   const needsTeams = format === 'scramble' || (format === 'matchplay' && selected.length > 2)
@@ -110,7 +110,7 @@ export default function NewRound() {
       net,
       hcpAllowance: allowance,
       participants,
-      skins: { enabled: skinsActive, net: skinsNet, valueByPar: stakes, tieRule },
+      skins: { enabled: skinsActive, net: skinsNet, valueByPar: stakes, tieRule, endRule },
     })
     navigate(`/round/${round.id}`, { replace: true })
   }
@@ -287,8 +287,8 @@ export default function NewRound() {
           label="Skins game"
           hint={
             skinsAvailable
-              ? 'Un duel entre les deux joueurs, en parallèle de la formule principale.'
-              : 'Le skins se joue à deux : sélectionne exactement 2 joueurs.'
+              ? 'En parallèle de la formule principale, avec la même saisie de scores.'
+              : 'Le skins oppose au moins 2 joueurs : sélectionne-les plus haut.'
           }
         />
 
@@ -347,8 +347,8 @@ export default function NewRound() {
               <p className="text-xs text-veil/40 mt-2 flex items-start gap-1.5">
                 <CoinIcon className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
-                  Le vainqueur d'un trou touche sa valeur de son adversaire. Le solde se
-                  règle à la fin de la partie. Total des {holes.length} trous :{' '}
+                  Le vainqueur d'un trou touche sa valeur, payée à parts égales par les
+                  autres joueurs. Le solde se règle à la fin. Total des {holes.length} trous :{' '}
                   <strong className="text-accent-ink">
                     {euro(holes.reduce((sum, h) => sum + (stakes[h.par] ?? 0), 0))}
                   </strong>
@@ -370,6 +370,24 @@ export default function NewRound() {
                 ]}
               />
             </div>
+
+            {tieRule === 'carryOver' && (
+              <div>
+                <span className="label">Si le dernier trou est égalisé</span>
+                <SegmentedControl
+                  value={endRule}
+                  onChange={setEndRule}
+                  columns={2}
+                  options={[
+                    { value: 'lost', label: 'Perdus', hint: 'personne ne les gagne' },
+                    { value: 'split', label: 'Partagés', hint: 'entre les ex-aequo' },
+                  ]}
+                />
+                <p className="mt-1.5 text-xs text-veil/40">
+                  À décider avant le départ : ce choix règle le sort des skins restants.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </section>

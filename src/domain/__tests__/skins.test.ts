@@ -207,3 +207,82 @@ describe('settle', () => {
     ])
   })
 })
+
+describe('computeSkins — à quatre joueurs', () => {
+  const D = player('d', 'David', 0)
+  // Trou 1 (par 4, 10 €) : Anne seule au meilleur score. Trou 2 : égalité Anne et
+  // Bruno, reportée. Trou 3 (par 3, 5 €) : Carla seule.
+  const round = makeRound({
+    players: [A, B, C, D],
+    scores: {
+      a: [4, 4, 4, null, null, null, null, null, null],
+      b: [5, 4, 4, null, null, null, null, null, null],
+      c: [5, 5, 3, null, null, null, null, null, null],
+      d: [6, 6, 5, null, null, null, null, null, null],
+    },
+  })
+  const result = computeSkins(round)
+
+  it('le vainqueur touche la valeur, les trois autres la paient à parts égales', () => {
+    expect(result.holes[0].winnerIds).toEqual(['a'])
+    expect(result.gains.a).toBe(10)
+    // Bruno paie sa part du trou 1 (10 € ÷ 3 = 3,33 €) puis du trou 3 (15 € ÷ 3 = 5 €).
+    expect(result.paid.b).toBeCloseTo(8.33, 2)
+    expect(result.paid.d).toBeCloseTo(8.33, 2)
+    // Anne ne paie que sa part du trou 3, puisqu'elle a gagné le trou 1.
+    expect(result.paid.a).toBeCloseTo(5, 2)
+  })
+
+  it('reporte l’égalité sur le trou suivant, qui vaut alors double', () => {
+    expect(result.holes[1].status).toBe('carried')
+    expect(result.holes[2].carriedIn).toBe(10)
+    // Trou 3 : 5 € de valeur + 10 € de report, tout pour Carla.
+    expect(result.holes[2].inPlay).toBe(15)
+    expect(result.gains.c).toBe(15)
+  })
+
+  it('reste à somme nulle', () => {
+    const sum = Object.values(result.net).reduce((x, y) => x + y, 0)
+    expect(Math.abs(sum)).toBeLessThan(0.02)
+  })
+})
+
+describe('computeSkins — dernier trou égalisé', () => {
+  // Tous les trous sont égalisés entre Anne et Bruno ; Carla est derrière.
+  const scoresTied = {
+    a: [4, 4, 3, 5, 4, 4, 3, 4, 5],
+    b: [4, 4, 3, 5, 4, 4, 3, 4, 5],
+    c: [6, 6, 5, 7, 6, 6, 5, 6, 7],
+  }
+
+  it('perdus : personne ne touche rien et le reste est signalé', () => {
+    const result = computeSkins(
+      makeRound({ players: [A, B, C], scores: scoresTied, skins: { endRule: 'lost' } }),
+    )
+    expect(result.unresolvedPot).toBe(90) // 10+10+5+15+10+10+5+10+15
+    expect(result.net).toEqual({ a: 0, b: 0, c: 0 })
+  })
+
+  it('partagés : les ex-aequo du dernier trou se partagent tout, payés par Carla', () => {
+    const result = computeSkins(
+      makeRound({ players: [A, B, C], scores: scoresTied, skins: { endRule: 'split' } }),
+    )
+    expect(result.unresolvedPot).toBe(0)
+    expect(result.holes[8].status).toBe('split')
+    expect(result.holes[8].inPlay).toBe(90)
+    expect(result.net).toEqual({ a: 45, b: 45, c: -90 })
+  })
+
+  it('ne change rien quand le dernier trou est remporté', () => {
+    const scores = { ...scoresTied, a: [4, 4, 3, 5, 4, 4, 3, 4, 4] }
+    const split = computeSkins(makeRound({ players: [A, B, C], scores, skins: { endRule: 'split' } }))
+    const lost = computeSkins(makeRound({ players: [A, B, C], scores, skins: { endRule: 'lost' } }))
+    expect(split.net).toEqual(lost.net)
+    expect(split.holes[8].status).toBe('won')
+  })
+
+  it('par défaut les skins restants sont perdus (parties déjà enregistrées)', () => {
+    const result = computeSkins(makeRound({ players: [A, B, C], scores: scoresTied }))
+    expect(result.unresolvedPot).toBe(90)
+  })
+})

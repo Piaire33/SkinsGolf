@@ -56,6 +56,10 @@ export const FORMAT_LABELS: Record<Format, string> = {
 
 export type SkinsTieRule = 'carryOver' | 'split' | 'void'
 
+/** Sort des skins restants quand le dernier trou est lui-même égalisé : `lost`, ils
+ *  sont perdus ; `split`, ils sont partagés entre les joueurs à égalité sur ce trou. */
+export type SkinsEndRule = 'lost' | 'split'
+
 export interface SkinsConfig {
   enabled: boolean
   /** true = scores nets (coups rendus selon le stroke index), false = brut. */
@@ -64,6 +68,8 @@ export interface SkinsConfig {
    *  payé à parts égales par les autres joueurs. */
   valueByPar: Record<number, number>
   tieRule: SkinsTieRule
+  /** Facultatif pour rester compatible avec les parties déjà enregistrées : `lost`. */
+  endRule?: SkinsEndRule
 }
 
 export interface Participant {
