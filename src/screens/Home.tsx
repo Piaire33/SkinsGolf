@@ -83,6 +83,10 @@ export default function Home() {
           icon={<HistoryIcon />}
         />
       </div>
+
+      <p className="pt-4 text-center text-[11px] text-veil/30">
+        SkinsGolf · version {__APP_VERSION__}
+      </p>
     </Screen>
   )
 }
