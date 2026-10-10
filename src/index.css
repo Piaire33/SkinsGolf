@@ -1,0 +1,211 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Charte inspirée des circuits professionnels (PGA Tour, DP World Tour) : bleu
+   marine, blanc, rouge pour les scores sous le par, chiffres condensés et gras.
+   Les teintes sont des approximations de ces identités, pas des reprises. Deux
+   jeux de variables : `html` porte `theme-light` ou `theme-dark`, posé par
+   `applyTheme()` ; le sombre reste la valeur par défaut tant qu'aucune classe
+   n'est présente, pour éviter un flash blanc au chargement. */
+@layer base {
+  :root,
+  html.theme-dark {
+    --c-canvas: 6 15 32;
+    --c-surface: 12 26 51;
+    --c-elevated: 21 40 74;
+    --c-bar: 0 60 128;
+    --c-veil: 255 255 255;
+    --c-content: 241 245 250;
+    --c-under: 255 99 105;
+
+    --c-accent: 28 100 214;
+    --c-accent-soft: 14 42 86;
+    --c-accent-line: 35 80 150;
+    --c-accent-ink: 125 178 255;
+    --c-accent-strong: 190 215 255;
+
+    --c-warn-soft: 46 38 16;
+    --c-warn-line: 95 74 26;
+    --c-warn-ink: 252 211 77;
+
+    --c-danger-soft: 62 24 28;
+    --c-danger-ink: 252 165 170;
+
+    color-scheme: dark;
+  }
+
+  html.theme-light {
+    --c-canvas: 238 241 246;
+    --c-surface: 255 255 255;
+    --c-elevated: 232 237 245;
+    --c-bar: 0 60 128;
+    --c-veil: 10 22 46;
+    --c-content: 10 22 46;
+    --c-under: 214 32 44;
+
+    --c-accent: 0 60 128;
+    --c-accent-soft: 222 233 248;
+    --c-accent-line: 150 183 228;
+    --c-accent-ink: 0 60 128;
+    --c-accent-strong: 0 40 90;
+
+    --c-warn-soft: 254 243 199;
+    --c-warn-line: 252 211 77;
+    --c-warn-ink: 146 64 14;
+
+    --c-danger-soft: 254 226 226;
+    --c-danger-ink: 153 27 27;
+
+    color-scheme: light;
+  }
+
+  html {
+    /* Empêche le zoom involontaire et le rebond de scroll pendant la saisie. */
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    @apply bg-canvas text-content antialiased;
+    margin: 0;
+    /* Respecte l'encoche et la barre de navigation Android en mode standalone. */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Supprime les flèches des champs numériques : on saisit au pavé ou aux boutons. */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl bg-surface border border-veil/10 p-4;
+  }
+
+  .field {
+    @apply w-full rounded-lg bg-elevated border border-veil/15 px-3 py-2.5 text-base
+           text-content placeholder:text-veil/35
+           focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3
+           font-display text-lg font-semibold uppercase tracking-wide transition
+           active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-white hover:brightness-110;
+  }
+  .btn-ghost {
+    @apply btn bg-veil/5 text-content hover:bg-veil/10;
+  }
+  .btn-danger {
+    @apply btn bg-danger-soft text-danger-ink hover:brightness-95;
+  }
+
+  /* Étiquettes de section : petites capitales condensées, comme les en-têtes de
+     colonnes d'un classement. */
+  .label {
+    @apply block font-display text-sm font-semibold uppercase tracking-wider text-veil/55 mb-1.5;
+  }
+
+  /* ----- Notation des scores, façon carte de score télévisée -----
+     Sous le par : cercle rouge (birdie), double cercle (eagle ou mieux).
+     Au-dessus : carré (bogey), double carré (double bogey ou pire). */
+  .mark {
+    @apply tabular-nums font-display font-semibold;
+    border: 1.5px solid transparent;
+  }
+  .mark-birdie,
+  .mark-eagle {
+    @apply text-under;
+    border-color: rgb(var(--c-under));
+    border-radius: 9999px;
+  }
+  .mark-eagle {
+    box-shadow:
+      0 0 0 2px rgb(var(--c-surface)),
+      0 0 0 3.5px rgb(var(--c-under));
+  }
+  .mark-bogey,
+  .mark-worse {
+    border-color: rgb(var(--c-content) / 0.75);
+    border-radius: 2px;
+  }
+  .mark-worse {
+    box-shadow:
+      0 0 0 2px rgb(var(--c-surface)),
+      0 0 0 3.5px rgb(var(--c-content) / 0.75);
+  }
+
+  /* Case de la carte de score éditable. */
+  .cell {
+    @apply w-6 h-7 bg-transparent text-center text-sm p-0 mark
+           focus:outline-none focus:ring-2 focus:ring-accent;
+  }
+  .cell-empty {
+    @apply text-veil/40;
+    border-color: transparent;
+    background: rgb(var(--c-veil) / 0.05);
+  }
+  .cell-par {
+    @apply text-content;
+  }
+  .cell-birdie {
+    @apply mark-birdie;
+  }
+  .cell-eagle {
+    @apply mark-eagle;
+  }
+  .cell-bogey {
+    @apply mark-bogey;
+  }
+  .cell-worse {
+    @apply mark-worse;
+  }
+}
+
+/* Style « PGA Tour » : bleu marine plus profond et rouge en couleur d'action, là où
+   le style « DP World Tour » (par défaut) utilise un bleu cobalt. Ces blocs ne
+   redéfinissent que ce qui change ; ils passent après les thèmes de base. */
+@layer base {
+  html.style-pga.theme-dark {
+    --c-canvas: 4 10 24;
+    --c-surface: 10 20 44;
+    --c-elevated: 18 32 62;
+    --c-bar: 0 32 91;
+
+    --c-accent: 214 38 50;
+    --c-accent-soft: 62 18 26;
+    --c-accent-line: 130 40 52;
+    --c-accent-ink: 255 125 132;
+    --c-accent-strong: 255 190 194;
+  }
+
+  html.style-pga.theme-light {
+    --c-canvas: 243 243 244;
+    --c-elevated: 235 236 239;
+    --c-bar: 0 32 91;
+    --c-veil: 12 20 40;
+    --c-content: 12 20 40;
+
+    --c-accent: 200 28 40;
+    --c-accent-soft: 253 232 234;
+    --c-accent-line: 243 168 174;
+    --c-accent-ink: 185 24 36;
+    --c-accent-strong: 130 14 24;
+  }
+}

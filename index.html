@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#003c80" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>SkinsGolf</title>
+    <script>
+      // Pose le thème avant le premier rendu : sans ça, l'app s'ouvrirait en
+      // sombre puis basculerait en clair, ce qui donne un flash désagréable au
+      // lancement depuis l'écran d'accueil.
+      try {
+        var saved = JSON.parse(localStorage.getItem('skinsgolf') || '{}')
+        var choice = (saved.state && saved.state.theme) || 'dark'
+        var resolved =
+          choice === 'system'
+            ? matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark'
+            : choice
+        var style = (saved.state && saved.state.brandStyle) || 'dpworld'
+        document.documentElement.classList.add('theme-' + resolved, 'style-' + style)
+        if (style === 'pga') {
+          document.querySelector('meta[name="theme-color"]').content = '#00205b'
+        }
+      } catch (e) {
+        /* premier lancement ou stockage indisponible : le sombre s'applique par défaut */
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
