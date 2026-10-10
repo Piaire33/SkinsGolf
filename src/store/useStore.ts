@@ -4,6 +4,7 @@ import { SAMPLE_COURSES } from '@/data/sampleCourses'
 import { uid } from '@/domain/course'
 import type { Course, Format, Participant, Player, Round, SkinsConfig } from '@/domain/types'
 import type { BrandStyle, ThemeChoice } from '@/theme'
+import { STORE_VERSION, migrateState } from './migrate'
 
 export interface NewRoundInput {
   course: Course
@@ -156,22 +157,8 @@ export const useStore = create<State>()(
     }),
     {
       name: 'skinsgolf',
-      version: 2,
-      // v1 → v2 : le montant du skins n'est plus la mise de chaque joueur mais la
-      // valeur du trou. On conserve le nombre saisi sous son nouveau nom.
-      migrate: (persisted, version) => {
-        const state = persisted as { rounds?: { skins?: Record<string, unknown> }[] }
-        if (version < 2) {
-          for (const round of state.rounds ?? []) {
-            const skins = round.skins
-            if (skins && 'stakeByPar' in skins) {
-              skins.valueByPar = skins.stakeByPar
-              delete skins.stakeByPar
-            }
-          }
-        }
-        return persisted as State
-      },
+      version: STORE_VERSION,
+      migrate: (persisted, version) => migrateState(persisted, version) as State,
     },
   ),
 )
